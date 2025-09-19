@@ -1,0 +1,62 @@
+{
+  "name": "Meu Bar - Controle de Fiado",
+  "short_name": "Meu Bar",
+  "description": "PWA offline-first para controle de contas fiadas em bares e estabelecimentos",
+  "start_url": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#121212",
+  "theme_color": "#4a9eff",
+  "lang": "pt-BR",
+  "scope": "/",
+  "dir": "ltr",
+  "categories": ["business", "finance", "productivity"],
+  "screenshots": [],
+  "icons": [
+    {
+      "src": "assets/icons/icon-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "assets/icons/icon-512x512.png", 
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Lançar Consumo",
+      "short_name": "Lançar",
+      "description": "Lançar consumo para um cliente",
+      "url": "/?page=lancamento",
+      "icons": [
+        {
+          "src": "assets/icons/icon-192x192.png",
+          "sizes": "192x192"
+        }
+      ]
+    },
+    {
+      "name": "Ver Clientes",
+      "short_name": "Clientes", 
+      "description": "Gerenciar clientes cadastrados",
+      "url": "/?page=clientes",
+      "icons": [
+        {
+          "src": "assets/icons/icon-192x192.png",
+          "sizes": "192x192"
+        }
+      ]
+    }
+  ],
+  "prefer_related_applications": false,
+  "edge_side_panel": {
+    "preferred_width": 400
+  },
+  "launch_handler": {
+    "client_mode": "navigate-existing"
+  }
+}

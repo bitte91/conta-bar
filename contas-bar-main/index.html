@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#1a1a1a">
+    <meta name="description" content="Controle de Fiado para Bar - PWA Offline">
+    <title>Meu Bar - Controle de Fiado</title>
+    
+    <!-- PWA Manifest -->
+    <link rel="manifest" href="manifest.json">
+    
+    <!-- Styles -->
+    <link rel="stylesheet" href="css/style.css">
+    
+    <!-- Dexie.js CDN -->
+    <script src="https://unpkg.com/dexie/dist/dexie.js"></script>
+</head>
+<body>
+    <!-- Header Fixo -->
+    <header>
+        <h1>🍺 Meu Bar</h1>
+        <p>Controle de Fiado</p>
+    </header>
+
+    <!-- Área Principal das Páginas -->
+    <main id="app">
+        <!-- Página de Lançamento (Padrão) -->
+        <section id="page-lancamento" class="page active">
+            <h2>🚀 Lançamento</h2>
+            
+            <!-- Seletor de Cliente -->
+            <div class="form-group">
+                <label for="select-client">Cliente:</label>
+                <select id="select-client" required>
+                    <option value="">Selecione um cliente...</option>
+                </select>
+            </div>
+
+            <!-- Grade de Produtos -->
+            <div class="form-group">
+                <label>Produtos:</label>
+                <div id="products-grid" class="products-grid">
+                    <!-- Produtos serão renderizados aqui -->
+                </div>
+            </div>
+
+            <!-- Resumo do Lançamento -->
+            <div id="launch-summary" class="launch-summary" style="display: none;">
+                <h3>Resumo:</h3>
+                <div id="summary-content"></div>
+                <div class="form-actions">
+                    <button id="confirm-launch-btn" class="btn btn-primary">Confirmar Lançamento</button>
+                    <button id="cancel-launch-btn" class="btn btn-secondary">Cancelar</button>
+                </div>
+            </div>
+        </section>
+
+        <!-- Página de Clientes -->
+        <section id="page-clientes" class="page">
+            <h2>👥 Clientes</h2>
+            
+            <!-- Formulário para Adicionar Cliente -->
+            <form id="add-client-form" class="form-card">
+                <h3>Adicionar Novo Cliente</h3>
+                <div class="form-group">
+                    <label for="client-name">Nome do Cliente:</label>
+                    <input type="text" id="client-name" placeholder="Nome completo" required>
+                </div>
+                <div class="form-group">
+                    <label for="client-phone">Telefone (opcional):</label>
+                    <input type="tel" id="client-phone" placeholder="(00) 00000-0000">
+                </div>
+                <div class="form-actions">
+                    <button type="submit" class="btn btn-primary">Adicionar Cliente</button>
+                </div>
+            </form>
+
+            <!-- Lista de Clientes -->
+            <div class="list-section">
+                <h3>Clientes Cadastrados</h3>
+                <ul id="client-list" class="item-list">
+                    <!-- Clientes serão renderizados aqui -->
+                </ul>
+            </div>
+        </section>
+
+        <!-- Página de Produtos -->
+        <section id="page-produtos" class="page">
+            <h2>🍻 Produtos</h2>
+            
+            <!-- Formulário para Adicionar Produto -->
+            <form id="add-product-form" class="form-card">
+                <h3>Adicionar Novo Produto</h3>
+                <div class="form-group">
+                    <label for="product-name">Nome do Produto:</label>
+                    <input type="text" id="product-name" placeholder="Ex: Cerveja Skol 600ml" required>
+                </div>
+                <div class="form-group">
+                    <label for="product-price">Preço (R$):</label>
+                    <input type="number" id="product-price" placeholder="0.00" step="0.01" min="0" required>
+                </div>
+                <div class="form-actions">
+                    <button type="submit" class="btn btn-primary">Adicionar Produto</button>
+                </div>
+            </form>
+
+            <!-- Lista de Produtos -->
+            <div class="list-section">
+                <h3>Produtos Cadastrados</h3>
+                <ul id="product-list" class="item-list">
+                    <!-- Produtos serão renderizados aqui -->
+                </ul>
+            </div>
+        </section>
+
+        <!-- Página de Extrato de Cliente (Dinâmica) -->
+        <section id="page-extrato" class="page">
+            <h2>📋 Extrato do Cliente</h2>
+            <div id="client-statement-content">
+                <!-- Conteúdo do extrato será renderizado aqui -->
+            </div>
+        </section>
+    </main>
+
+    <!-- Navegação Inferior Fixa -->
+    <nav class="bottom-nav">
+        <button class="nav-btn active" data-page="page-lancamento">
+            <span class="nav-icon">🚀</span>
+            <span class="nav-label">Lançar</span>
+        </button>
+        <button class="nav-btn" data-page="page-clientes">
+            <span class="nav-icon">👥</span>
+            <span class="nav-label">Clientes</span>
+        </button>
+        <button class="nav-btn" data-page="page-produtos">
+            <span class="nav-icon">🍻</span>
+            <span class="nav-label">Produtos</span>
+        </button>
+    </nav>
+
+    <!-- Loading/Toast Messages -->
+    <div id="toast" class="toast"></div>
+
+    <!-- Main Script -->
+    <script type="module" src="js/main.js"></script>
+</body>
+</html>
