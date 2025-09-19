@@ -5,6 +5,7 @@
 // Importar módulos
 import * as Store from './store.js';
 import * as UI from './ui.js';
+import * as OCRService from './ocr-service.js';
 import { formatCurrency, validateName, validatePrice, validatePhone } from './utils.js';
 
 /* ==========================================================================
@@ -182,6 +183,7 @@ function setupForms() {
     setupClientForm();
     setupProductForm();
     setupLaunchForm();
+    setupOcrHandlers(); // Adicionar setup para OCR
     
     console.log('📝 Formulários configurados');
 }
@@ -560,6 +562,224 @@ async function registerPayment(clientId, amount) {
         setLoading(false);
     }
 }
+
+/* ==========================================================================
+   OCR / IMAGE SCANNING
+   ========================================================================== */
+
+/**
+ * Configura os handlers para o fluxo de OCR.
+ */
+function setupOcrHandlers() {
+    const scanBtn = document.getElementById('scan-note-btn');
+    const imageUpload = document.getElementById('image-upload');
+
+    if (scanBtn && imageUpload) {
+        scanBtn.addEventListener('click', () => {
+            imageUpload.click(); // Abre o seletor de arquivos
+        });
+
+        imageUpload.addEventListener('change', handleImageUpload);
+    }
+}
+
+/**
+ * Manipula a seleção de uma imagem para OCR.
+ * @param {Event} e - O evento de 'change' do input de arquivo.
+ */
+async function handleImageUpload(e) {
+    const file = e.target.files[0];
+    if (!file) {
+        return;
+    }
+
+    try {
+        UI.showOcrStatus(true); // Mostra o modal de status
+
+        const text = await OCRService.recognizeText(file, (progress) => {
+            UI.updateOcrProgress(progress);
+        });
+
+        const parsedData = parseOcrResult(text);
+
+        if (!parsedData.clientName || parsedData.items.length === 0) {
+            throw new Error('Não foi possível extrair informações úteis da imagem. Tente novamente.');
+        }
+
+        // Limpar qualquer seleção anterior antes de popular
+        UI.clearProductSelection();
+
+        // Preencher o formulário com os dados encontrados
+        populateFormWithOcrData(parsedData);
+
+
+    } catch (error) {
+        console.error('❌ Erro no fluxo de OCR:', error);
+        UI.showToast(error.message || 'Erro ao processar imagem', 'error');
+    } finally {
+        UI.showOcrStatus(false); // Esconde o modal
+        // Limpar o valor do input para permitir selecionar o mesmo arquivo novamente
+        e.target.value = '';
+    }
+}
+
+/**
+ * Analisa o texto bruto do OCR e extrai dados estruturados.
+ * @param {string} text - Texto extraído pelo Tesseract.
+ * @returns {Object} Objeto com { clientName: string, items: Array<{ productName: string, qty: number }> }
+ */
+function parseOcrResult(text) {
+    if (!text || typeof text !== 'string') {
+        return { clientName: null, items: [] };
+    }
+
+    const lines = text.split('\n').filter(line => line.trim() !== '');
+
+    if (lines.length === 0) {
+        return { clientName: null, items: [] };
+    }
+
+    // Assumir que a primeira linha é o nome do cliente
+    const clientName = lines.shift().trim();
+    const items = [];
+
+    // Regex para encontrar "produto = quantidade"
+    const itemRegex = /^(.*?)\s*=\s*(\d+)\s*$/;
+
+    for (const line of lines) {
+        const match = line.trim().match(itemRegex);
+        if (match) {
+            const productName = match[1].trim();
+            const qty = parseInt(match[2], 10);
+            items.push({ productName, qty });
+        }
+    }
+
+    return { clientName, items };
+}
+
+/**
+ * Preenche o formulário de lançamento com os dados do OCR.
+ * @param {Object} parsedData - Dados estruturados do OCR.
+ */
+function populateFormWithOcrData(parsedData) {
+    if (!parsedData) return;
+
+    // 1. Encontrar o melhor match para o cliente
+    const clientMatch = findBestMatch(parsedData.clientName, appState.clients, 'name');
+    if (!clientMatch) {
+        UI.showToast(`Cliente "${parsedData.clientName}" não encontrado.`, 'warning');
+        return; // Abortar se não encontrar cliente
+    }
+
+    // Selecionar o cliente no dropdown
+    UI.selectClient(clientMatch.id);
+    let allItemsFound = true;
+
+    // 2. Encontrar os melhores matches para os produtos e atualizar a UI
+    for (const item of parsedData.items) {
+        const productMatch = findBestMatch(item.productName, appState.products, 'name');
+
+        if (productMatch) {
+            // Adicionar o produto na UI a quantidade de vezes necessária
+            UI.setProductQuantity(productMatch.id, item.qty);
+        } else {
+            allItemsFound = false;
+            UI.showToast(`Produto "${item.productName}" não encontrado.`, 'warning');
+            console.warn(`Produto não encontrado: ${item.productName}`);
+        }
+    }
+
+    // 3. Atualizar o resumo final
+    UI.updateLaunchSummary();
+
+    if (allItemsFound) {
+        UI.showToast('Formulário preenchido com os dados da imagem!', 'success');
+    } else {
+        UI.showToast('Alguns itens não foram encontrados. Verifique o lançamento.', 'warning');
+    }
+}
+
+/**
+ * Encontra a melhor correspondência para uma string em uma lista de candidatos.
+ * @param {string} query - A string a ser pesquisada.
+ * @param {Array<Object>} candidates - A lista de objetos para pesquisar.
+ * @param {string} key - A chave do objeto que contém o texto para comparar.
+ * @returns {Object|null} O melhor candidato encontrado ou null.
+ */
+function findBestMatch(query, candidates, key) {
+    if (!query || !candidates || candidates.length === 0) {
+        return null;
+    }
+
+    let bestMatch = null;
+    let minDistance = Infinity;
+    const queryLower = query.toLowerCase();
+
+    for (const candidate of candidates) {
+        const candidateLower = candidate[key].toLowerCase();
+        const distance = levenshtein(queryLower, candidateLower);
+
+        // Critério de matching:
+        // 1. Match exato é o melhor.
+        if (distance === 0) {
+            return candidate;
+        }
+        // 2. Senão, encontrar o mais próximo.
+        if (distance < minDistance) {
+            minDistance = distance;
+            bestMatch = candidate;
+        }
+    }
+
+    // Limite de aceitação: a distância não pode ser maior que metade do tamanho da string
+    if (minDistance > query.length / 2) {
+        return null;
+    }
+
+    return bestMatch;
+}
+
+/**
+ * Calcula a distância Levenshtein entre duas strings.
+ * @param {string} a - Primeira string.
+ * @param {string} b - Segunda string.
+ * @returns {number} A distância entre as strings.
+ */
+function levenshtein(a, b) {
+    if (a.length === 0) return b.length;
+    if (b.length === 0) return a.length;
+
+    const matrix = [];
+
+    // Incrementar ao longo da primeira coluna de cada linha
+    for (let i = 0; i <= b.length; i++) {
+        matrix[i] = [i];
+    }
+
+    // Incrementar ao longo da primeira linha
+    for (let j = 0; j <= a.length; j++) {
+        matrix[0][j] = j;
+    }
+
+    // Preencher o resto da matriz
+    for (let i = 1; i <= b.length; i++) {
+        for (let j = 1; j <= a.length; j++) {
+            if (b.charAt(i - 1) === a.charAt(j - 1)) {
+                matrix[i][j] = matrix[i - 1][j - 1];
+            } else {
+                matrix[i][j] = Math.min(
+                    matrix[i - 1][j - 1] + 1, // substituição
+                    matrix[i][j - 1] + 1,     // inserção
+                    matrix[i - 1][j] + 1      // deleção
+                );
+            }
+        }
+    }
+
+    return matrix[b.length][a.length];
+}
+
 
 /* ==========================================================================
    UTILITÁRIOS DA APLICAÇÃO

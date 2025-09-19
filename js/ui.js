@@ -393,6 +393,39 @@ export function clearProductSelection() {
  * Obtém os dados do lançamento atual
  * @returns {Object|null} Dados do lançamento ou null se inválido
  */
+export function setProductQuantity(productId, newQty) {
+    const productCard = document.querySelector(`.product-card[data-product-id="${productId}"]`);
+    if (!productCard) return;
+
+    const quantityEl = productCard.querySelector('.product-quantity');
+    const currentQty = parseInt(quantityEl.textContent) || 0;
+
+    if (newQty <= 0) {
+        quantityEl.textContent = '0';
+        quantityEl.style.display = 'none';
+        productCard.classList.remove('selected');
+    } else {
+        quantityEl.textContent = newQty;
+        quantityEl.style.display = 'flex';
+        productCard.classList.add('selected');
+    }
+}
+
+/**
+ * Seleciona um cliente no dropdown de lançamento.
+ * @param {number} clientId - O ID do cliente a ser selecionado.
+ */
+export function selectClient(clientId) {
+    const selectClient = document.getElementById('select-client');
+    if (selectClient) {
+        selectClient.value = clientId;
+    }
+}
+
+/**
+ * Obtém os dados do lançamento atual
+ * @returns {Object|null} Dados do lançamento ou null se inválido
+ */
 export function getLaunchData() {
     const selectClient = document.getElementById('select-client');
     const selectedProducts = getSelectedProducts();
@@ -520,6 +553,68 @@ export function renderClientStatement(client, transactions, products, balance) {
     
     console.log(`Extrato renderizado para ${client.name}: ${transactions?.length || 0} transações, saldo ${formatCurrency(balance)}`);
 }
+
+/* ==========================================================================
+   OCR MODAL
+   ========================================================================== */
+
+/**
+ * Mostra ou esconde o modal de status do OCR.
+ * @param {boolean} visible - Se o modal deve ser exibido.
+ */
+export function showOcrStatus(visible) {
+    const modal = document.getElementById('ocr-status-modal');
+    if (modal) {
+        modal.style.display = visible ? 'flex' : 'none';
+        if (visible) {
+            // Resetar o progresso ao mostrar
+            updateOcrProgress({ status: 'iniciando', progress: 0 });
+        }
+    }
+}
+
+/**
+ * Atualiza o conteúdo e a barra de progresso do modal de OCR.
+ * @param {Object} data - Dados do progresso.
+ * @param {string} data.status - O status atual (ex: 'reconhecendo').
+ * @param {number} data.progress - O progresso de 0 a 1.
+ * @param {string} [data.message] - Uma mensagem opcional.
+ */
+export function updateOcrProgress(data) {
+    const messageEl = document.getElementById('ocr-status-message');
+    const progressEl = document.getElementById('ocr-progress');
+
+    if (!messageEl || !progressEl) return;
+
+    let message = '';
+    switch (data.status) {
+        case 'iniciando':
+            message = 'Iniciando o motor de OCR...';
+            break;
+        case 'reconhecendo':
+            message = `Reconhecendo texto... (${Math.round(data.progress * 100)}%)`;
+            break;
+        case 'concluido':
+            message = 'Processo finalizado com sucesso!';
+            break;
+        case 'erro':
+            message = `Erro: ${data.message || 'Falha no processo.'}`;
+            break;
+        default:
+            message = 'Aguarde...';
+    }
+
+    messageEl.textContent = message;
+    progressEl.style.width = `${data.progress * 100}%`;
+
+    // Mudar a cor da barra em caso de erro
+    if (data.status === 'erro') {
+        progressEl.style.backgroundColor = 'var(--danger-color)';
+    } else {
+        progressEl.style.backgroundColor = 'var(--primary-color)';
+    }
+}
+
 
 /* ==========================================================================
    MENSAGENS E NOTIFICAÇÕES
