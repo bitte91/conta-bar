@@ -15,6 +15,9 @@
     
     <!-- Dexie.js CDN -->
     <script src="https://unpkg.com/dexie/dist/dexie.js"></script>
+
+    <!-- Tesseract.js CDN -->
+    <script src='https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js'></script>
 </head>
 <body>
     <!-- Header Fixo -->
@@ -27,7 +30,14 @@
     <main id="app">
         <!-- Página de Lançamento (Padrão) -->
         <section id="page-lancamento" class="page active">
-            <h2>🚀 Lançamento</h2>
+            <div class="page-header">
+                <h2>🚀 Lançamento</h2>
+                <button id="scan-note-btn" class="btn btn-secondary">
+                    <span class="nav-icon">📷</span>
+                    Escanear Anotação
+                </button>
+                <input type="file" id="image-upload" accept="image/*" style="display: none;">
+            </div>
             
             <!-- Seletor de Cliente -->
             <div class="form-group">
@@ -141,6 +151,17 @@
 
     <!-- Loading/Toast Messages -->
     <div id="toast" class="toast"></div>
+
+    <!-- OCR Status Modal -->
+    <div id="ocr-status-modal" class="modal-overlay" style="display: none;">
+        <div class="modal-content">
+            <h3>Processando Imagem...</h3>
+            <p id="ocr-status-message">Aguarde, estamos lendo a anotação.</p>
+            <div class="progress-bar">
+                <div id="ocr-progress" class="progress-bar-inner"></div>
+            </div>
+        </div>
+    </div>
 
     <!-- Main Script -->
     <script type="module" src="js/main.js"></script>
